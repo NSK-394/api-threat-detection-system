@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Defense Shield - Real-time Threat Detection</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+        :root {
+            --primary: #00f2ff;
+            --secondary: #ff006e;
+            --success: #06ffa5;
+            --warning: #ffbe0b;
+            --danger: #ff006e;
+            --bg-dark: #0a0e27;
+            --bg-card: #111936;
+            --bg-elevated: #1a2140;
+            --text: #e8ecf5;
+            --text-muted: #8892b8;
+            --border: #1e2847;
+            --glow: rgba(0, 242, 255, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        
+        .grid-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(90deg, rgba(0, 242, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(rgba(0, 242, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 20s linear infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.15;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: var(--primary);
+            top: -100px;
+            left: -100px;
+            animation: float 15s ease-in-out infinite;
+        }
+
+        .orb-2 {
+            width: 300px;
+            height: 300px;
+            background: var(--secondary);
+            bottom: -50px;
+            right: -50px;
+            animation: float 20s ease-in-out infinite reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(30px, 50px) scale(1.1); }
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 3rem 0;
+            position: relative;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .shield-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            box-shadow: 0 0 40px var(--glow);
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 40px var(--glow); }
+            50% { transform: scale(1.05); box-shadow: 0 0 60px var(--glow); }
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -1px;
+            margin-bottom: 0.5rem;
+            font-family: 'Space Mono', monospace;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            font-weight: 300;
+        }
+
+        .status-bar {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg-elevated);
+            padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            border: 1px solid var(--border);
+            margin-top: 1rem;
+            font-family: 'Space Mono', monospace;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: blink 2s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        
+        .controls {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .control-group {
+            display: flex;
+            align-items: flex-start;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 0.95rem;
+            color: var(--text-muted);
+        }
+
+        .slider-container {
+            flex: 1;
+            min-width: 300px;
+            padding-top: 18px;                   
+        }
+
+        .slider-value {
+            font-family: 'Space Mono', monospace;
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+
+        /* Range base */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 24px;
+            background: transparent;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        /* Track */
+       input[type="range"]::-webkit-slider-runnable-track {
+            height: 8px;
+            background: #1f2a52;          /* lighter than card bg */
+            border-radius: 10px;
+        }
+
+        input[type="range"]::-moz-range-track {
+            height: 8px;
+            background: #1f2a52;
+            border-radius: 10px;
+        }
+        /* Thumb */
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            box-shadow: 0 0 20px var(--glow);
+            margin-top: -8px; /* correct vertical center */
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border: none;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            box-shadow: 0 0 20px var(--glow);
+        }
+        input[type="range"]::-moz-range-progress {
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            height: 8px;
+            border-radius: 10px;
+        }
+
+        /* Button (unchanged but cleaned spacing) */
+        .btn {
+            padding: 1rem 2.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Outfit', sans-serif;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            box-shadow: 0 4px 20px rgba(0, 242, 255, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 242, 255, 0.5);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+        
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(180deg, var(--primary), var(--secondary));
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .stat-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0, 242, 255, 0.2);
+        }
+
+        .stat-card:hover::before {
+            opacity: 1;
+        }
+
+        .stat-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            opacity: 0.8;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            font-family: 'Space Mono', monospace;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--primary), white);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+      
+        .charts-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .chart-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .chart-icon {
+            font-size: 1.5rem;
+        }
+
+    
+        .table-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box input {
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text);
+            font-size: 0.95rem;
+            width: 300px;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(0, 242, 255, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+
+        .table-scroll {
+            overflow-x: auto;
+            max-height: 600px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+
+        thead {
+            position: sticky;
+            top: 0;
+            background: var(--bg-elevated);
+            z-index: 10;
+        }
+
+        th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            border-bottom: 2px solid var(--border);
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            font-family: 'Space Mono', monospace;
+            font-size: 0.9rem;
+        }
+
+        tbody tr {
+            transition: all 0.2s;
+        }
+
+        tbody tr:hover {
+            background: var(--bg-elevated);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-allow {
+            background: rgba(6, 255, 165, 0.15);
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+
+        .badge-monitor {
+            background: rgba(255, 190, 11, 0.15);
+            color: var(--warning);
+            border: 1px solid var(--warning);
+        }
+
+        .badge-throttle {
+            background: rgba(255, 0, 110, 0.15);
+            color: #ff6b9d;
+            border: 1px solid #ff6b9d;
+        }
+
+        .badge-block {
+            background: rgba(255, 0, 110, 0.15);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+        }
+
+        .badge-bot {
+            background: rgba(255, 0, 110, 0.15);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+        }
+
+        .badge-normal {
+            background: rgba(6, 255, 165, 0.15);
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 14, 39, 0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid var(--border);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2.5rem; }
+            .charts-section { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .control-group { flex-direction: column; align-items: stretch; }
+        }
+
+        .alert-banner {
+            background: linear-gradient(135deg, rgba(255, 0, 110, 0.2), rgba(255, 107, 157, 0.2));
+            border: 1px solid var(--danger);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            display: none;
+            align-items: center;
+            gap: 1rem;
+            animation: slideDown 0.5s ease;
+        }
+
+        .alert-banner.active {
+            display: flex;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .alert-icon {
+            font-size: 2rem;
+        }
+
+        .api-key-short {
+            font-family: 'Space Mono', monospace;
+            background: var(--bg-elevated);
+            padding: 0.2rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+        }
+
+        .progress-bar{
+            display: none;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            }
+    </style> 
+</head>
+<body>
+    <div class="grid-bg"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div style="text-align: center;">
+            <div class="spinner"></div>
+            <p style="margin-top: 1rem; font-family: 'Space Mono', monospace;">Processing Pipeline...</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <header>
+            <div class="logo-section">
+                <div class="shield-icon">🛡️</div>
+                <div>
+                    <h1>API DEFENSE SHIELD</h1>
+                    <p class="subtitle">Behavior Fingerprinting • Risk Scoring • Anomaly Detection</p>
+                </div>
+            </div>
+            <div class="status-bar">
+                <span class="status-dot"></span>
+                <span>System Online</span>
+                <span style="margin-left: 1rem; opacity: 0.5;">|</span>
+                <span style="margin-left: 1rem;" id="timestamp">--</span>
+            </div>
+        </header>
+
+        <div class="alert-banner" id="alertBanner">
+            <div class="alert-icon">⚠️</div>
+            <div style="flex: 1;">
+                <strong style="display: block; margin-bottom: 0.25rem;">High Risk API Keys Detected</strong>
+                <span id="alertMessage">Multiple suspicious patterns identified</span>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Bot Traffic Percentage</span>
+                        <span class="slider-value"><span id="botValue">30</span>%</span>
+                    </div>
+                    <input type="range" id="botSlider" min="5" max="90" value="30" step="5">
+                </div>
+                <button class="btn btn-primary" onclick="runPipeline()">
+                    ▶ Run Detection Pipeline
+                </button>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">🔑</div>
+                <div class="stat-value" id="totalKeys">--</div>
+                <div class="stat-label">Total API Keys</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🚫</div>
+                <div class="stat-value" id="blockedKeys">--</div>
+                <div class="stat-label">Blocked</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">👁️</div>
+                <div class="stat-value" id="monitorKeys">--</div>
+                <div class="stat-label">Monitored</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">✅</div>
+                <div class="stat-value" id="allowKeys">--</div>
+                <div class="stat-label">Allowed</div>
+            </div>
+        </div>
+
+        <div class="charts-section">
+            <div class="chart-card">
+                <div class="chart-title">
+                    <span class="chart-icon">📊</span>
+                    Decision Distribution
+                </div>
+                <canvas id="decisionChart"></canvas>
+            </div>
+            <div class="chart-card">
+                <div class="chart-title">
+                    <span class="chart-icon">🎯</span>
+                    Risk Score Analysis
+                </div>
+                <canvas id="riskChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-card" style="margin-bottom: 2rem;">
+            <div class="chart-title">
+                <span class="chart-icon">🧬</span>
+                Anomaly Score Distribution
+            </div>
+            <canvas id="anomalyChart"></canvas>
+        </div>
+
+        <div class="table-card">
+            <div class="table-header">
+                <div>
+                    <h2 style="font-size: 1.5rem; font-weight: 700;">🔍 Behavior Fingerprints</h2>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem;">Real-time API activity monitoring</p>
+                </div>
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="searchInput" placeholder="Search API keys..." onkeyup="filterTable()">
+                </div>
+            </div>
+            <div class="table-scroll">
+                <table id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>API Key</th>
+                            <th>Requests/Min</th>
+                            <th>Fail Ratio</th>
+                            <th>Unique IPs</th>
+                            <th>Endpoints</th>
+                            <th>Risk Score</th>
+                            <th>Decision</th>
+                            <th>Type</th>
+                            <th>Why Flagged</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr>
+                            <td colspan="8" style="text-align: center; padding: 3rem; color: var(--text-muted);">
+                                Run the detection pipeline to see results
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let featuresData = null;
+        let charts = {};
+
+        function updateTimestamp() {
+            const now = new Date();
+            document.getElementById('timestamp').textContent = now.toLocaleTimeString();
+        }
+        updateTimestamp();
+        setInterval(updateTimestamp, 1000);
+
+      
+        document.getElementById('botSlider').addEventListener('input', (e) => {
+            document.getElementById('botValue').textContent = e.target.value;
+        });
+
+        async function runPipeline() {
+            const botPercent = document.getElementById('botSlider').value;
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.classList.add('active');
+
+            await fetch(`/run?ratio=${botPercent}`);
+
+            await loadAllData();
+
+            overlay.classList.remove('active');
+        }
+
+        function generateSampleData(botPercent) {
+            const totalKeys = 80;
+            const botKeys = Math.floor(totalKeys * botPercent / 100);
+            const normalKeys = totalKeys - botKeys;
+
+            const data = [];
+            
+        
+            for (let i = 0; i < normalKeys; i++) {
+                data.push({
+                    api_key: generateUUID(),
+                    requests_per_min: Math.random() * 50 + 10,
+                    fail_ratio: Math.random() * 0.05,
+                    unique_ip_count: Math.floor(Math.random() * 3) + 1,
+                    endpoint_variety: Math.floor(Math.random() * 4) + 2,
+                    risk_score: Math.floor(Math.random() * 4),
+                    decision: 'ALLOW',
+                    true_type: 'NORMAL',
+                    anomaly_score: Math.random() * 0.3 - 0.5
+                });
+            }
+
+            for (let i = 0; i < botKeys; i++) {
+                const riskScore = Math.floor(Math.random() * 8) + 6;
+                let decision = 'BLOCK';
+                if (riskScore < 8) decision = 'THROTTLE';
+                if (riskScore < 6) decision = 'MONITOR';
+
+                data.push({
+                    api_key: generateUUID(),
+                    requests_per_min: Math.random() * 200 + 80,
+                    fail_ratio: Math.random() * 0.3 + 0.1,
+                    unique_ip_count: Math.floor(Math.random() * 10) + 5,
+                    endpoint_variety: Math.floor(Math.random() * 5) + 4,
+                    risk_score: riskScore,
+                    decision: decision,
+                    true_type: 'BOT',
+                    anomaly_score: Math.random() * 0.5 + 0.2
+                });
+            }
+
+            featuresData = data;
+            updateDashboard();
+        }
+
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        function updateDashboard() {
+            if (!featuresData) return;
+
+            const blocked = featuresData.filter(d => d.decision === 'BLOCK').length;
+            const monitored = featuresData.filter(d => d.decision === 'MONITOR').length;
+            const allowed = featuresData.filter(d => d.decision === 'ALLOW').length;
+            const throttled = featuresData.filter(d => d.decision === 'THROTTLE').length;
+
+            document.getElementById('totalKeys').textContent = featuresData.length;
+            document.getElementById('blockedKeys').textContent = blocked;
+            document.getElementById('monitorKeys').textContent = monitored + throttled;
+            document.getElementById('allowKeys').textContent = allowed;
+
+            
+            if (blocked > 0) {
+                const banner = document.getElementById('alertBanner');
+                document.getElementById('alertMessage').textContent = 
+                    `${blocked} API keys blocked, ${monitored + throttled} under surveillance`;
+                banner.classList.add('active');
+            }
+
+            // Update charts
+            updateCharts();
+
+            // Update table
+            updateTable();
+        }
+
+        function updateCharts() {
+            const decisions = featuresData.reduce((acc, d) => {
+                acc[d.decision] = (acc[d.decision] || 0) + 1;
+                return acc;
+            }, {});
+
+            // Decision Chart
+            if (charts.decision) charts.decision.destroy();
+            const decisionCtx = document.getElementById('decisionChart').getContext('2d');
+            charts.decision = new Chart(decisionCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(decisions),
+                    datasets: [{
+                        data: Object.values(decisions),
+                        backgroundColor: [
+                            'rgba(6, 255, 165, 0.8)',
+                            'rgba(255, 190, 11, 0.8)',
+                            'rgba(255, 107, 157, 0.8)',
+                            'rgba(255, 0, 110, 0.8)'
+                        ],
+                        borderColor: '#1a2140',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#e8ecf5',
+                                padding: 20,
+                                font: { size: 13, family: 'Outfit' }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Risk Chart
+            if (charts.risk) charts.risk.destroy();
+            const riskBuckets = [0, 0, 0, 0, 0];
+            featuresData.forEach(d => {
+                if (d.risk_score <= 2) riskBuckets[0]++;
+                else if (d.risk_score <= 4) riskBuckets[1]++;
+                else if (d.risk_score <= 6) riskBuckets[2]++;
+                else if (d.risk_score <= 8) riskBuckets[3]++;
+                else riskBuckets[4]++;
+            });
+
+            const riskCtx = document.getElementById('riskChart').getContext('2d');
+            charts.risk = new Chart(riskCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['0-2', '3-4', '5-6', '7-8', '9+'],
+                    datasets: [{
+                        label: 'API Keys',
+                        data: riskBuckets,
+                        backgroundColor: 'rgba(0, 242, 255, 0.6)',
+                        borderColor: 'rgba(0, 242, 255, 1)',
+                        borderWidth: 2,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { color: '#8892b8' },
+                            grid: { color: '#1e2847' }
+                        },
+                        x: {
+                            ticks: { color: '#8892b8' },
+                            grid: { display: false }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#e8ecf5',
+                                font: { size: 13, family: 'Outfit' }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Anomaly Chart
+            if (charts.anomaly) charts.anomaly.destroy();
+            const anomalyCtx = document.getElementById('anomalyChart').getContext('2d');
+            charts.anomaly = new Chart(anomalyCtx, {
+                type: 'line',
+                data: {
+                    labels: featuresData.map((_, i) => i + 1),
+                    datasets: [{
+                        label: 'Anomaly Score',
+                        data: featuresData.map(d => d.anomaly_score),
+                        borderColor: 'rgba(255, 0, 110, 1)',
+                        backgroundColor: 'rgba(255, 0, 110, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 2,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            ticks: { color: '#8892b8' },
+                            grid: { color: '#1e2847' }
+                        },
+                        x: {
+                            ticks: { color: '#8892b8', maxTicksLimit: 20 },
+                            grid: { display: false }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#e8ecf5',
+                                font: { size: 13, family: 'Outfit' }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateTable() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            featuresData.slice(0, 100).forEach(row => {
+                const tr = document.createElement('tr');
+
+                function cell(text) {
+                    const td = document.createElement('td');
+                    td.textContent = text ?? "—";
+                    return td;
+                }
+
+                tr.appendChild(cell(row.api_key?.substring(0,8) + "..."));
+                tr.appendChild(cell(row.requests_per_min?.toFixed?.(1)));
+                tr.appendChild(cell((row.fail_ratio * 100).toFixed(1) + "%"));
+                tr.appendChild(cell(row.unique_ip_count));
+                tr.appendChild(cell(row.endpoint_variety));
+                tr.appendChild(cell(row.risk_score));
+                tr.appendChild(cell(row.decision));
+                tr.appendChild(cell(row.true_type));
+                tr.appendChild(cell(row.reasons));   // ⭐ NEW COLUMN
+
+                tbody.appendChild(tr);
+            });
+}
+        
+
+        function filterTable() {
+            const input = document.getElementById('searchInput').value.toLowerCase();
+            const table = document.getElementById('dataTable');
+            const rows = table.getElementsByTagName('tr');
+
+            for (let i = 1; i < rows.length; i++) {
+                const cells = rows[i].getElementsByTagName('td');
+                let found = false;
+                
+                for (let j = 0; j < cells.length; j++) {
+                    if (cells[j].textContent.toLowerCase().includes(input)) {
+                        found = true;
+                        break;
+                    }
+                }
+                
+                rows[i].style.display = found ? '' : 'none';
+            }
+        }
+        async function loadAllData() {
+            const metrics = await fetch('/metrics').then(r => r.json());
+            const table = await fetch('/table').then(r => r.json());
+            const risk = await fetch('/risk').then(r => r.json());
+
+            featuresData = table.map((row, i) => ({
+                ...row,
+                anomaly_score: risk[i] ?? 0
+            }));
+
+            updateDashboard();
+        }
+        window.addEventListener('load', () => {
+            loadAllData();
+        });
+
+    </script>
+</body>
+</html>

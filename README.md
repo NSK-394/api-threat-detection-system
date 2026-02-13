@@ -11,3 +11,8 @@ Core components:
 - Real-time dashboard for analysts
 
 Tech stack: Python, Scikit-learn, Pandas, Flask ect
+
+## Certifications
+
+- Palo Alto Networks — Security Operations Fundamentals  
+  See: /certificates

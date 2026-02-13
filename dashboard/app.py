@@ -25,14 +25,12 @@ def run_pipeline():
     print("\n=== PIPELINE START ===")
     print("Bot ratio:", ratio)
 
-    print("Running coder1...")
-    subprocess.run(["python", "coder1.py", ratio])
 
-    print("Running coder2...")
-    subprocess.run(["python", "coder2.py"])
+    BASE = os.path.dirname(os.path.dirname(__file__))
 
-    print("Running coder3...")
-    subprocess.run(["python", "coder3.py"])
+    subprocess.run(["python", os.path.join(BASE, "src", "coder1.py"), ratio])
+    subprocess.run(["python", os.path.join(BASE, "src", "coder2.py")])
+    subprocess.run(["python", os.path.join(BASE, "src", "coder3.py")])
 
     print("=== PIPELINE END ===\n")
 
